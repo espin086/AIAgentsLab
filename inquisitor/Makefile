@@ -8,7 +8,7 @@ black:
 	@if [ -z "$(PYTHON_FILES)" ]; then \
 		echo "No Python files found to check with Black."; \
 	else \
-		black .;\ 
+		black .; \
 		black --check $(PYTHON_FILES) --verbose; \
 	fi
 	@echo "Running Black-NB on Jupyter notebooks..."

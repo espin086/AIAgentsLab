@@ -1,6 +1,5 @@
 """A tool to search YouTube videos."""
 
-
 from langchain_community.tools import YouTubeSearchTool
 
 TOOL_DESCRIPTION = """
