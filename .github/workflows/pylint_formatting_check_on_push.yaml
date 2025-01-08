@@ -1,0 +1,79 @@
+name: Lint Check
+
+on:
+  push:
+    branches:
+      - '**'  # Run on all branches
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  pylint-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      # Step 3: Install dependencies
+      - name: Install Pylint nbqa
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint nbqa
+
+      # Step 4: Run Pylint
+      - name: Run Pylint for Python Files
+        run: |
+          set -e
+          files=$(find . -type f -name '*.py' || true)
+          if [ -z "$files" ]; then
+            echo "No Python files changed. Skipping Pylint check."
+          else
+            pylint --disable=E0401 $files | tee pylint_report.txt
+            score=$(grep -Eo '[0-9.]+/10' pylint_report.txt | awk -F/ '{print $1}')
+            if (( $(echo "$score < 8" | bc -l) )); then
+              echo "Pylint score is below 8.0. Please fix the issues."
+              exit 1
+            fi
+          fi
+
+      # Step 5: Run nbQA Pylint for Jupyter Notebooks
+      - name: Run nbQA Pylint for Jupyter Notebooks
+        run: |
+          set -e
+          notebooks=$(find . -type f -name '*.ipynb' || true)
+          if [ -z "$notebooks" ]; then
+            echo "No Jupyter notebooks changed. Skipping nbQA Pylint check."
+          else
+            echo "Running nbQA Pylint for the following notebooks:"
+            echo "$notebooks"
+            
+            # Run nbQA Pylint and save the report
+            nbqa pylint --disable=E0401 $notebooks | tee nbqa_pylint_report.txt
+      
+            # Extract the Pylint score
+            score=$(grep -Eo '[0-9.]+/10' nbqa_pylint_report.txt | awk -F/ '{print $1}' | tail -1)
+            echo "Pylint score extracted: $score"
+      
+            # Ensure score is numeric before comparison
+            if [[ ! $score =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+              echo "Error: Unable to extract a valid Pylint score."
+              exit 1
+            fi
+      
+            # Compare the score with the threshold
+            if (( $(echo "$score < 8.0" | bc -l) )); then
+              echo "nbQA Pylint score for notebooks is below 8.0. Please fix the issues."
+              exit 1
+            fi
+      
+            echo "nbQA Pylint check passed with score: $score"
+          fi

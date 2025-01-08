@@ -1,0 +1,40 @@
+name: Black Formatting Check
+
+on: [push]
+
+jobs:
+  black:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+
+    - name: Install Black and Black-NB
+      run: |
+        pip install black
+        pip install nbqa
+
+    - name: Run Black on Python Files
+      run: |
+        python_files=$(find . -type f -name '*.py' || true)
+        if [ -z "$python_files" ]; then
+          echo "No Python files changed. Skipping Black check."
+        else
+          echo "Running Black on Python files..."
+          black --check $python_files
+        fi
+  
+    - name: Run nbqa Black on Notebooks
+      run: |
+        notebooks=$(find . -type f -name '*.ipynb' || true)
+        if [ -z "$notebooks" ]; then
+          echo "No Jupyter notebooks changed. Skipping nbqa Black check."
+        else
+          echo "Running nbqa Black on Jupyter notebooks..."
+          nbqa black --check $notebooks
+        fi

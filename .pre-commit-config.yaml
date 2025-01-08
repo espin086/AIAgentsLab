@@ -1,0 +1,22 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 23.1.0  # Use the latest version
+    hooks:
+      - id: black
+
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: bash -c "pylint $(git diff --cached --name-only --diff-filter=ACM | grep '.py$') | tee pylint_report.txt && grep -Eo '[0-9.]+/10' pylint_report.txt | awk -F/ '{if ($1 < 8) exit 1}'"
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+
+      - id: radon-mi-check
+        name: Radon Maintainability Check
+        entry: bash -c "files=$(git diff --cached --name-only --diff-filter=ACM | grep '.py$' || true); if [ -z \"$files\" ]; then echo 'No Python files changed. Skipping Radon check.'; else radon mi $files | awk '/C|D/ {print $0; exit 1}'; fi"
+        language: system
+        pass_filenames: false
+        always_run: true

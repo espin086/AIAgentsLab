@@ -1,0 +1,108 @@
+name: Radon Code Quality Check
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  radon-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # Step 3: Install dependencies
+      - name: Install Radon
+        run: |
+          python -m pip install --upgrade pip
+          pip install colorama radon nbqa
+
+      # Step 4: Run Radon Maintainability Check
+      - name: Run Radon Maintainability Check
+        run: |
+          files=$(find . -type f -name '*.py' || true)
+          if [ -z "$files" ]; then
+            echo "No Python files found. Skipping Radon check."
+          else
+            echo "Running Radon Maintainability Check..."
+            all_passed=true
+            for file in $files; do
+              # Run Radon and capture the full output
+              radon_output=$(radon mi "$file")
+              
+              # Print the full output of Radon for debugging
+              echo "$radon_output"
+              
+              # If the grade is found, assign it
+              grade=$(echo "$radon_output" | awk '/^[A-F]$/ {print $1}')
+              
+              # If grade is not found, set it to Unknown
+              if [ -z "$grade" ]; then
+                grade="Unknown"
+              fi
+              
+              # If grade is C, D, E, or F, fail the test
+              if [[ "$grade" == "C" || "$grade" == "D" || "$grade" == "E" || "$grade" == "F" ]]; then
+                echo "Maintainability grade for $file is $grade. Please improve the code quality."
+                all_passed=false
+                break  # Exit the loop if a low grade is found
+              fi
+            done
+            if [ "$all_passed" = true ]; then
+              echo "All Python files passed the maintainability check."
+            else
+              echo "Some Python files failed the maintainability check."
+              exit 1
+            fi
+          fi
+
+      # Step 5: Run Radon on Jupyter notebooks
+      - name: Run Radon Maintainability Check on Jupyter notebooks
+        run: |
+          notebooks=$(find . -type f -name '*.ipynb' || true)
+          if [ -z "$notebooks" ]; then
+            echo "No Jupyter notebooks found. Skipping Radon check."
+          else
+            echo "Running Radon Maintainability Check on Jupyter notebooks..."
+            all_passed=true
+            for notebook in $notebooks; do
+              # Running radon mi with appropriate flags
+              echo "Running Radon on $notebook..."
+              radon_notebook_output=$(radon mi --include-ipynb "$notebook")
+
+              # Try to capture the grade from the output, if available
+              grade=$(echo "$radon_notebook_output" | awk '/^[A-F]$/ {print $1}')
+              
+              # Check if grade is found, if not set it as Unknown
+              if [ -z "$grade" ]; then
+                grade="Unknown"
+              fi
+              
+              # If grade is A or B, set all_passed to true
+              if [[ "$grade" == "A" || "$grade" == "B" ]]; then
+                echo "Maintainability grade for $notebook is $grade. Good quality."
+                all_passed=true
+              # If grade is C, D, E, or F, set all_passed to false
+              elif [[ "$grade" == "C" || "$grade" == "D" || "$grade" == "E" || "$grade" == "F" ]]; then
+                echo "Maintainability grade for $notebook is $grade. Please improve the code quality."
+                all_passed=false
+              fi
+            done
+            if [ "$all_passed" = true ]; then
+              echo "All notebooks passed the maintainability check."
+            else
+              exit 1
+            fi
+          fi
