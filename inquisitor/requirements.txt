@@ -9,3 +9,5 @@ langchain_openai
 langchain_community 
 langgraph
 python-dotenv
+
+wikipedia 
