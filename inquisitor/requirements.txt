@@ -3,3 +3,9 @@ pylint
 radon
 nbqa
 nbQa
+
+langchain 
+langchain_openai 
+langchain_community 
+langgraph
+python-dotenv
