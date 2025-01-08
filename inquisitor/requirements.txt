@@ -10,4 +10,5 @@ langchain_community
 langgraph
 python-dotenv
 
-wikipedia 
+wikipedia
+youtube_search
