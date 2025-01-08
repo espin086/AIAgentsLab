@@ -1,7 +1,7 @@
-### Template
+### AI Agents Lab
 ---
 
-A centralized repository for managing multiple data science, machine learning, and AI projects.
+A centralized repository for managing multiple Artificial Intelligence Agents.
 
 [CONTRIBUTING.md](CONTRIBUTING.md)
 
